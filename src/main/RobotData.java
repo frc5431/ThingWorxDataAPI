@@ -4,6 +4,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.sql.*;
 
 import json.JsonObject;
 
@@ -31,9 +32,13 @@ public class RobotData {
 		timestamp = null,
 		laststamp = " ";
 	
+	static int currentRow = 1;
+	
 	static boolean updating = false;
 
 	static ThingWorx worx = null;
+	static Connection conn = null;
+	static Statement stmt = null;
 	
 	public static double toDigit(String value) {
 		return Double.valueOf(value.replaceAll("[^\\d.]", ""));
@@ -43,9 +48,60 @@ public class RobotData {
 		return toDigit(got.get(toGrab).asString());
 	}
 	
+	public static void closeDB() {
+		if(conn != null) {
+			try {
+				if(stmt != null) stmt.close();
+				conn.close();
+			} catch(Exception err){}
+		}
+	}
+	
 	public static void tick() {
 		try {
 			if(worx == null) worx = new ThingWorx();
+			if(conn == null) {
+				try {
+					Class.forName("org.sqlite.JDBC");
+					conn = DriverManager.getConnection("jdbc:sqlite:robot.db");
+					conn.setAutoCommit(false);
+					System.out.println("Opened database!");
+				
+					try {
+						stmt = conn.createStatement();
+						String sql = "DROP TABLE ROBOTDATA";
+						stmt.executeQuery(sql);
+						stmt.close();
+					} catch(Exception dropNotFound){}
+					
+				      stmt = conn.createStatement();
+				      String sql = "CREATE TABLE ROBOTDATA " +
+				                   "(ID INT PRIMARY KEY     NOT NULL," +
+				                   " TIMESTAMP           TEXT    NOT NULL, " + 
+				                   " XANGLE        DOUBLE     NOT NULL, " + 
+				                   " YANGLE        DOUBLE	  NOT NULL," + 
+				                   " ZANGLE        DOUBLE	  NOT NULL," + 
+				                   " XACCEL        DOUBLE	  NOT NULL," + 
+				                   " YACCEL        DOUBLE	  NOT NULL," + 
+				                   " ZACCEL        DOUBLE	  NOT NULL," + 
+				                   " LEFTRPM        DOUBLE	  NOT NULL," + 
+				                   " RIGHTRPM       DOUBLE	  NOT NULL," + 
+				                   " LDISTANCE        DOUBLE	  NOT NULL," + 
+				                   " RDISTANCE        DOUBLE	  NOT NULL," + 
+				                   " LEFTDRIVEPOWER        DOUBLE	  NOT NULL," + 
+				                   " RIGHTDRIVEPOWER        DOUBLE	  NOT NULL," + 
+				                   " CHOPPERS        DOUBLE	  NOT NULL," + 
+				                   " AUTON        BOOLEAN	  NOT NULL," + 
+				                   " TELEOP       BOOLEAN	  NOT NULL," + 
+				                   " ENABLED        DOUBLE	  NOT NULL)"; 
+				      stmt.executeUpdate(sql);
+				      stmt.close();
+				      conn.commit();
+				} catch(Exception sqlerr) {
+					System.out.println("Error getting connection to database");
+					sqlerr.printStackTrace();
+				}
+			}
 			JsonObject got = worx.get_property();
 			timestamp = got.get("timestamp").asString();
 			updating = (timestamp != laststamp);
@@ -66,10 +122,37 @@ public class RobotData {
 			auton = JD(got, "auton");
 			teleop = JD(got, "teleop");
 			enabled = JD(got, "enabled");
+		      stmt = conn.createStatement();
+		      String sql = String.format("INSERT INTO ROBOTDATA (ID,TIMESTAMP,XANGLE,YANGLE,ZANGLE,XACCEL,YACCEL,ZACCEL,LEFTRPM,RIGHTRPM,LDISTANCE,RDISTANCE,LEFTDRIVEPOWER,RIGHTDRIVEPOWER,CHOPPERS,AUTON,TELEOP,ENABLED) " +
+		                   "VALUES (%d, '%s', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s );", currentRow, timestamp, fmt(xangle),
+		                   fmt(yangle), fmt(zangle), fmt(xaccel), fmt(yaccel), fmt(zaccel), fmt(leftrpm), fmt(rightrpm), 
+		                   fmt(ldistance), fmt(rdistance), fmt(leftdrivepower), fmt(rightdrivepower), fmt(choppers), 
+		                   fmt(auton), fmt(teleop), fmt(enabled)); 
+		      stmt.executeUpdate(sql);
+		      stmt.close();
+		      conn.commit();
+		      currentRow += 1;
 		} catch(Exception fail) {
 			System.out.println("Failed to update values...");
 			fail.printStackTrace();
 		}
+	}
+	
+	public static int getCommits() {
+		return currentRow;
+	}
+	
+	public static void updateByDB(int row) {
+		
+	}
+	
+	
+	public static String fmt(double d)
+	{
+	    if(d == (long) d)
+	        return String.format("%d",(long)d);
+	    else
+	        return String.format("%s",d);
 	}
 	
 	public static boolean isUpdating() {

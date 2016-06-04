@@ -7,6 +7,7 @@ public class test_run {
 			RobotData.tick();
 			System.out.println(RobotData.getChopperState());
 			System.out.println(RobotData.isTeleop());
+			RobotData.closeDB();
 
 			//ThingWorx worx = new ThingWorx();
 			//worx.put_property("");
