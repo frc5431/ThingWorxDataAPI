@@ -44,6 +44,10 @@ public class RobotData {
 		return Double.valueOf(value.replaceAll("[^\\d.]", ""));
 	}
 	
+	public static double JD(ResultSet set, String toGrab) throws SQLException {
+		return toDigit(set.getString(toGrab));
+	}
+	
 	public static double JD(JsonObject got, String toGrab) {
 		return toDigit(got.get(toGrab).asString());
 	}
@@ -51,9 +55,15 @@ public class RobotData {
 	public static void closeDB() {
 		if(conn != null) {
 			try {
-				if(stmt != null) stmt.close();
+				if(stmt != null) {
+					stmt.close();
+					conn.commit();
+				}
 				conn.close();
-			} catch(Exception err){}
+			} catch(Exception err){
+				System.out.println("Error closing DB!");
+				err.printStackTrace();
+			}
 		}
 	}
 	
@@ -143,6 +153,32 @@ public class RobotData {
 	}
 	
 	public static void updateByDB(int row) {
+		try {
+			stmt = conn.createStatement();
+			ResultSet got = stmt.executeQuery("SELECT * FROM ROBOTDATA WHERE Id=" + String.valueOf(row) + ";");
+			while(got.next()) {
+				timestamp = got.getString("timestamp");
+				xangle = JD(got, "xangle");
+				yangle = JD(got, "yangle");
+				zangle = JD(got, "zangle");
+				xaccel = JD(got, "xaccel");
+				yaccel = JD(got, "yaccel");
+				zaccel = JD(got, "zaccel");
+				leftrpm = JD(got, "leftrpm");
+				rightrpm = JD(got, "rightrpm");
+				ldistance = JD(got, "ldistance");
+				rdistance = JD(got, "rdistance");
+				leftdrivepower = JD(got, "leftdrivepower");
+				rightdrivepower = JD(got, "rightdrivepower");
+				choppers = JD(got, "choppers");
+				auton = JD(got, "auton");
+				teleop = JD(got, "teleop");
+				enabled = JD(got, "enabled");
+				System.out.println("Updated values from DataBase");
+			}
+		} catch(Exception readDBError) {
+			readDBError.printStackTrace();
+		}
 		
 	}
 	
