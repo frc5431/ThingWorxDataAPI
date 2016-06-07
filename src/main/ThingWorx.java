@@ -16,13 +16,21 @@ public class ThingWorx {
 
 	private HttpURLConnection connection = null; 
 	private final String
+	baseUrl = "https://thingx-bhulse.rd1.thingworx.io/Thingworx",
+	appKey = "4cb289bd-4cd3-4a0b-a635-bc189290c4e9",//"e5ced0ce-637f-4b33-a4d3-cc3597af0b71",
+	userName = "bhulse",
+	userPass = "wmv7a5yr";
+
+private String
+	selected_thing = "robot3Helper";
+	/*private final String
 		baseUrl = "http://52.202.207.237/Thingworx",
 		appKey = "e5ced0ce-637f-4b33-a4d3-cc3597af0b71",
 		userName = "smerkousdavid@gmail.com",
 		userPass = "holycrap";
 	
 	private String
-		selected_thing = "RobotData";
+		selected_thing = "RobotData";*/
 	
 	private final String[]
 			header_h = {"Connection",
